@@ -9,8 +9,8 @@
 %       - ALSA audio tools, most Linux distrubtions
 %       - builtin WAV tools on Windows 
 %   - 'bypass' : no audio transmission, takes txsignal as received signal
-clear;
-clc;
+
+close all;
 % Configuration Values
 conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
 
@@ -20,14 +20,22 @@ conf.nframes = 1;       % number of frames to transmit
 conf.nbits   = 2000;    % number of bits 
 conf.modulation_order = 2; % BPSK:1, QPSK:2
 conf.f_c     = 4000;
-
+%Configuration Parameters
+conf.N = 256;           %Number of subcarriers
+conf.Fspacing = 5;
+conf.filter_len = 10*conf.os_factor;        
+conf.CP = conf.N / 2;                     % Cyclic Prefix length (half of the OFDM symbol length)
+%conf.CP      = ceil((conf.N*conf.os_factor/2)); % including oversampling
+conf.nbits   = 10*conf.modulation_order*conf.N; % number of bits 
+conf.nb_symbols = conf.nbits/(2*conf.N); % nb of time domaine symbols
+conf.BWBB = ceil(conf.N / 2) * conf.Fspacing; % Baseband bandwidth
+conf.ntraining = 20;
+conf.RollOff = 0.22;
 conf.npreamble  = 100;
+conf.detection_threshold = 15;
 conf.bitsps     = 16;   % bits per audio sample
 conf.offset     = 0;
-conf.tx_filterlen = 20; % symbols
-conf.rx_filterlen = 20; % symbols
-conf.rolloff = 0.22;
-
+conf.os_factor_preamble =4;
 % Init Section
 % all calculations that you only have to do once
 conf.os_factor  = conf.f_s/conf.f_sym;
@@ -40,10 +48,15 @@ conf.nsyms      = ceil(conf.nbits/conf.modulation_order);
 res.biterrors   = zeros(conf.nframes,1);
 res.rxnbits     = zeros(conf.nframes,1);
 
-% TODO: To speed up your simulation pregenerate data you can reuse
-% beforehand.
-
-
+% Generate training data
+training_bits = randi([0 1], conf.N, 1); % Training bits
+% Generate test training data with alternating bits
+% training_bits = zeros(conf.N,1);
+% for i=1:conf.N
+%     if mod(i,2) == 0
+%         training_bits(i) = 1;
+%     end
+% end
 % Results
 
 
@@ -53,7 +66,7 @@ for k=1:conf.nframes
     txbits = randi([0 1],conf.nbits,1);
     
     % TODO: Implement tx() Transmit Function
-    [txsignal conf] = tx(txbits,conf,k);
+    [txsignal conf] = tx(txbits,conf,k,training_bits);
     
     % % % % % % % % % % % %
     % Begin
@@ -69,7 +82,7 @@ for k=1:conf.nframes
     rawtxsignal = [  rawtxsignal  zeros(size(rawtxsignal)) ]; % add second channel: no signal
     txdur       = length(rawtxsignal)/conf.f_s; % calculate length of transmitted signal
     
-    % wavwrite(rawtxsignal,conf.f_s,16,'out.wav')   
+%     wavwrite(rawtxsignal,conf.f_s,16,'out.wav')   
     audiowrite('out.wav',rawtxsignal,conf.f_s)  
     
     % Platform native audio mode 
@@ -117,21 +130,21 @@ for k=1:conf.nframes
     end
     
     % Plot received signal for debugging
-    figure;
-    plot(rxsignal);
-    title('Received Signal')
+    %figure;
+    %plot(rxsignal);
+    %title('Received Signal')
     
     %
     % End
     % Audio Transmission   
     % % % % % % % % % % % %
     
-    % TODO: Implement rx() Receive Function
-    [rxbits conf]       = rx(rxsignal,conf);
+    [rxbits conf]       = rx(rxsignal,conf,k,training_bits);
     
     res.rxnbits(k)      = length(rxbits);  
     res.biterrors(k)    = sum(rxbits ~= txbits);
-    
+    %txbits(1:100)
+    %rxbits(1:100)
 end
 
 per = sum(res.biterrors > 0)/conf.nframes

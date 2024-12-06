@@ -1,5 +1,4 @@
 function b = QPSK_demapper(a)
-% Convert noisy QPSK symbols into a bit vector. Hard decisions.
 
 a = a(:); % Make sure "a" is a column vector
 
