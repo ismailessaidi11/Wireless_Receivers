@@ -14,17 +14,27 @@ function [txsignal conf] = tx(txbits,conf,k)
 %
 
 txbits = reshape(txbits, [], 2);
+
+% Add preamble to signal 
+%preamble = preamble_generate(conf.npreamble);
+%txbits = [preamble ; txbits];
+
+% Mapping QPSK
 QPSK_Map = 1/sqrt(2) * [(-1-1j) (-1+1j) ( 1-1j) ( 1+1j)];
 symbols = QPSK_Map(bi2de(txbits, 'left-msb')+1).';
 
-% pulse shaping
-pulse = rrc(1, conf.rolloff, conf.tx_filterlen); % change to os_factor if needed instead of 1
-tx_baseband = conv(symbols,pulse.','full');
+%plot the TX constellation
+plot_constellation(symbols, 'tx constellation')
 
+% upsampling
+symbol_up = upsample(symbols, conf.os_factor);
+
+% pulse shaping
+pulse = rrc(conf.os_factor, conf.rolloff, conf.tx_filterlen); % change to os_factor if needed instead of 1
+tx_baseband = conv(symbol_up,pulse.','full');
 
 % upconverting
-t = (0:length(tx_baseband)-1) / conf.f_s;
-%t = 0:1/conf.f_s:(size(tx_baseband)-1)/conf.f_s;
+t = 0:1/conf.f_s:(size(tx_baseband)-1)/conf.f_s;
 txsignal = cos(2*pi*conf.f_c*t').*real(tx_baseband)-sin(2*pi*conf.f_c*t').*imag(tx_baseband);
 
 % dummy 400Hz sinus generation

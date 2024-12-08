@@ -78,11 +78,21 @@ for k=1:conf.nframes
         % Windows WAV mode 
         if ispc()
             disp('Windows WAV');
-            wavplay(rawtxsignal,conf.f_s,'async');
+            playobj = audioplayer(rawtxsignal, conf.f_s);
+            recobj = audiorecorder(conf.f_s, conf.bitsps, 1); % 1 channel for mono recording
+            
+            % Start recording and playback
+            record(recobj); % Start recording
             disp('Recording in Progress');
-            rawrxsignal = wavrecord((txdur+1)*conf.f_s,conf.f_s);
-            disp('Recording complete')
-            rxsignal = rawrxsignal(1:end,1);
+            playblocking(playobj); % Play the signal and block execution until done
+            pause(0.5); % Optional pause to ensure recording captures entire signal
+            stop(recobj); % Stop recording
+            disp('Recording complete');
+
+            % Retrieve recorded data
+            rawrxsignal = getaudiodata(recobj, 'int16'); % Retrieve as 16-bit integers
+            rxsignal = double(rawrxsignal) / double(intmax('int16')); % Normalize recorded signal
+
 
         % ALSA WAV mode 
         elseif isunix()
@@ -109,6 +119,7 @@ for k=1:conf.nframes
         stop(recobj);
         disp('Recording complete')
         rawrxsignal  = getaudiodata(recobj,'int16');
+        rxdur       = length(rawrxsignal)/conf.f_s;
         rxsignal     = double(rawrxsignal(1:end))/double(intmax('int16')) ;
         
     elseif strcmp(conf.audiosystem,'bypass')
