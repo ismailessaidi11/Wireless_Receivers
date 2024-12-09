@@ -13,24 +13,30 @@ function [rxbits conf] = rx(rxsignal,conf,k)
 %   rxbits      : received bits
 %   conf        : configuration structure
 %
-if strcmp(conf.audiosystem,'bypass') % remove the 0 padding at start and end
-    rxsignal = rxsignal(1+length(zeros(conf.f_s,1)):end - length(zeros(conf.f_s,1)));
-end
-% Downconversion
-%t = 0:1/conf.f_s:(size(rxsignal)-1)/conf.f_s;
-t = (0:length(rxsignal)-1) / conf.f_s;
 
-rx_downconverted = rxsignal .* (cos(2*pi*conf.f_c*t') - 1i*sin(2*pi*conf.f_c*t'));
+
+% Downconversion
+t = (0:length(rxsignal)-1) / conf.f_s;
+rx_downconverted = rxsignal .* exp(-2i*pi*conf.f_c*t');
+
+% Phase correction because we noticed rotation !!!!!!!!
+%phase_offset = mean(angle(rx_downconverted));
+%rx_downconverted = rx_downconverted .* exp(-1i * phase_offset);
+
 
 % Low-pass Filter
-rx_baseband = lowpass(rx_downconverted,conf);
+rx_baseband = 2*lowpass(rx_downconverted,conf);
 
 % Matched filter
-pulse = rrc(1, conf.rolloff, conf.rx_filterlen); % change to os_factor if needed instead of 1
-filtered_rxsignal = conv(rx_baseband,pulse.','full');
+matched_filter = rrc(conf.os_factor, conf.rolloff, conf.rx_filterlen); % change to os_factor if needed instead of 1
+filtered_rxsignal = conv(rx_baseband,matched_filter.','full');
 
-% remove padding due to filtering
-downsampled_rxsignal = filtered_rxsignal(1+conf.tx_filterlen+conf.rx_filterlen:end-conf.tx_filterlen-conf.rx_filterlen);
+% frame synch and remove padding due to filtering
+idx = frame_sync(filtered_rxsignal, conf);
+downsampled_rxsignal = filtered_rxsignal(1+idx+conf.tx_filterlen+conf.rx_filterlen : conf.os_factor : idx+conf.os_factor*conf.nsyms);
+
+%downsampled_rxsignal = rx_baseband(1+conf.tx_filterlen+conf.rx_filterlen : end-conf.rx_filterlen-conf.tx_filterlen);
+%plot_constellation(downsampled_rxsignal,  'rx constellation');
 
 % demapping
 rxbits = QPSK_demapper(downsampled_rxsignal);
