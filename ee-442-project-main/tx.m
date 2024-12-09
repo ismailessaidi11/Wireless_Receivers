@@ -17,7 +17,7 @@ function [txsignal conf] = tx(txbits,conf,k, training_symbols, preamble_bits)
 source = txbits;
 
 if conf.scramble == 1
-    source = wlanScramble(txbits,conf.scramInit);
+    %source = wlanScramble(txbits,conf.scramInit);
 end
 
 %% Add Data Symbols

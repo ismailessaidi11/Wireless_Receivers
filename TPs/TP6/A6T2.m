@@ -1,3 +1,5 @@
+clear;
+clc;
 rng(159)
 
 % Oversampling factor

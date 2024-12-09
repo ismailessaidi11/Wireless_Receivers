@@ -14,16 +14,16 @@ function [rxbits conf] = rx(rxsignal,conf,k)
 %   conf        : configuration structure
 %
 % remove the 0 padding at start and end
-padding = length(zeros(conf.f_s,1));
-rxsignal = rxsignal(1+padding:end - padding);
+%padding = length(zeros(conf.f_s,1));
+%rxsignal = rxsignal(1+padding:end - padding);
 
 % Downconversion
 t = (0:length(rxsignal)-1) / conf.f_s;
 rx_downconverted = rxsignal .* exp(-2i*pi*conf.f_c*t');
 
 % Phase correction because we noticed rotation !!!!!!!!
-phase_offset = mean(angle(rx_downconverted));
-rx_downconverted = rx_downconverted .* exp(-1i * phase_offset);
+%phase_offset = mean(angle(rx_downconverted));
+%rx_downconverted = rx_downconverted .* exp(-1i * phase_offset);
 
 
 % Low-pass Filter
@@ -34,12 +34,12 @@ matched_filter = rrc(conf.os_factor, conf.rolloff, conf.rx_filterlen); % change 
 filtered_rxsignal = conv(rx_baseband,matched_filter.','full');
 
 % frame synch and remove padding due to filtering
-%idx = frame_synch(filtered_rxsignal, conf);
+idx = frame_sync(filtered_rxsignal, conf);
 %downsampled_rxsignal = filtered_rxsignal(idx:idx + ((conf.nb_symbols+1)*number_of_bits)-1);
-downsampled_rxsignal = filtered_rxsignal(1+conf.tx_filterlen+conf.rx_filterlen : conf.os_factor : end-conf.tx_filterlen-conf.rx_filterlen);
+downsampled_rxsignal = filtered_rxsignal(1+idx+conf.tx_filterlen+conf.rx_filterlen : conf.os_factor : idx+conf.os_factor*conf.nsyms);
 
 %downsampled_rxsignal = rx_baseband(1+conf.tx_filterlen+conf.rx_filterlen : end-conf.rx_filterlen-conf.tx_filterlen);
-plot_constellation(downsampled_rxsignal,  'rx constellation');
+%plot_constellation(downsampled_rxsignal,  'rx constellation');
 
 % demapping
 rxbits = QPSK_demapper(downsampled_rxsignal);

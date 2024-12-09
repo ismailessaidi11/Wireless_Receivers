@@ -40,10 +40,10 @@ for i = L * frame_sync_length + 1 : length(rx_signal)
         end
         if (samples_after_threshold == 0)
             display(['Frame starts at ',num2str(beginning_of_data),'th symbol']);
-            plot(corVal,'r-')
-            xlabel('Offset [symbols]')
-            ylabel('Normalized autocorrelation')
-            grid on
+            %plot(corVal,'r-')
+            %xlabel('Offset [symbols]')
+            %ylabel('Normalized autocorrelation')
+            %grid on
             return;
         end
     end
