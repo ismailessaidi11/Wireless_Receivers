@@ -62,7 +62,7 @@ for ii = 1:numel(freq_range)
         
         % Generate random data
         txbits = randi([0 1],conf.nbits,1);
-        
+        %%%
         % TODO: Implement tx() Transmit Function
         [txsignal conf] = tx(txbits,conf,k);
         
