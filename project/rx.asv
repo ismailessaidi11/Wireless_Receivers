@@ -16,16 +16,15 @@ function [rxbits conf] = rx(rxsignal,conf,k)
 
 
 % Downconversion
-Ts = 1/conf.f_s;
-t = 0:Ts:(length(rxsignal)-1)*Ts;
-rx_downconverted = rxsignal .* exp(-2i*pi*conf.f_c*t.');
+t = (0:length(rxsignal)-1) / conf.f_s;
+rx_downconverted = rxsignal .* exp(-2i*pi*conf.f_c*t');
 
 % Low-pass Filter
 rx_baseband = 2*lowpass(rx_downconverted,conf);
 
 % Matched filter
 matched_filter = rrc(conf.os_factor, conf.rolloff, conf.rx_filterlen); 
-filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
+filtered_rxsignal = conv(rx_baseband,matched_filter.','full');
 
 % frame synch 
 [idx, phase_of_peak, magnitude_of_peak] = frame_sync(filtered_rxsignal, conf);
@@ -34,29 +33,35 @@ filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 h = magnitude_of_peak*exp(1j*phase_of_peak);
 corrected_rxsignal = conj(h)/norm(h)^2*filtered_rxsignal;
 
-downsampled_rxsignal = corrected_rxsignal(1+idx : conf.os_factor : idx+conf.os_factor*conf.nsyms-1);
-
-theta_hat = zeros(length(downsampled_rxsignal)+1, 1);
+theta_hat = zeros(data_length+1, 1);
 % Phase estimation
-for k = 1 : length(downsampled_rxsignal)
+for k = 1 : data_length
     % Apply viterbi-viterbi algorithm
-    deltaTheta = 1/4*angle(-downsampled_rxsignal(k)^4) + pi/2*(-1:4);
+    deltaTheta = 1/4*angle(-corrected_rxsignal(k)^4) + pi/2*(-1:4);
     
     % Unroll phase
     [~, ind] = min(abs(deltaTheta - theta_hat(k)));
+    theta_no_filter = deltaTheta(ind);
+    
+    [~, ind] = min(abs(deltaTheta - theta_hat(k)));
     theta = deltaTheta(ind);
+    
+    theta_hat_no_filter(k+1) = mod(theta_no_filter, 2*pi);
     % Lowpass filter phase
     theta_hat(k+1) = mod(0.01*theta + 0.99*theta_hat(k), 2*pi);
     
     % Phase correction
-    downsampled_rxsignal(k) = downsampled_rxsignal(k) * exp(-1j * theta_hat(k+1));
+    payload_data_no_filter(k) = payload_data(k) * exp(-1j * theta_hat_no_filter(k+1));   % ...and rotate the current symbol accordingly
+    payload_data(k) = payload_data(k) * exp(-1j * theta_hat(k+1));
 
 end
+downsampled_rxsignal = filtered_rxsignal(1+idx+conf.tx_filterlen+conf.rx_filterlen : conf.os_factor : idx+conf.os_factor*conf.nsyms);
 
-%plot_constellation(downsampled_rxsignal,  'rx constellation');
+plot_constellation(downsampled_rxsignal,  'rx constellation');
 
 % demapping
 rxbits = QPSK_demapper(downsampled_rxsignal);
+
 
 % dummy 
 %rxbits = zeros(conf.nbits,1);

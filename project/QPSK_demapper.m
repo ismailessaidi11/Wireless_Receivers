@@ -1,12 +1,7 @@
 function b = QPSK_demapper(a)
 
-a = a(:); % Make sure "a" is a column vector
-
-b = [real(a) imag(a)] > 0;
-
-% Convert the matrix "b" to a vector, reading the elements of "b" rowwise.
-b = b.';
+QPSK_Map = (1/sqrt(2)) * [(-1-1j) (-1+1j) ( 1-1j) ( 1+1j)];
+[~, ind] = min(a-QPSK_Map,[],2);
+b = de2bi(ind-1, 'left-msb');
 b = b(:);
-
-b = double(b); % Convert data type from logical to double
 end

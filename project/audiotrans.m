@@ -13,6 +13,7 @@ clear;
 clc;
 % Configuration Values
 conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
+conf.noise = "awgn";
 
 conf.f_s     = 48000;   % sampling rate  
 conf.f_sym   = 100;     % symbol rate
@@ -24,12 +25,8 @@ conf.f_c     = 4000;
 conf.npreamble  = 100;
 conf.bitsps     = 16;   % bits per audio sample
 conf.offset     = 0;
-conf.tx_filterlen = 20; % symbols
-conf.rx_filterlen = 20; % symbols
-conf.rolloff = 0.22;
 
-conf.SNR_db = 50;
-conf.SNR_lin = 10^(conf.SNR_db/10);
+
 
 % Init Section
 % all calculations that you only have to do once
@@ -38,6 +35,13 @@ if mod(conf.os_factor,1) ~= 0
    disp('WARNING: Sampling rate must be a multiple of the symbol rate'); 
 end
 conf.nsyms      = ceil(conf.nbits/conf.modulation_order);
+
+% added conf fields
+conf.tx_filterlen = conf.os_factor * 20 + 1;
+conf.rx_filterlen = conf.os_factor * 20 + 1;
+conf.rolloff = 0.22;
+conf.SNR_db = 10;
+conf.SNR_lin = 10^(conf.SNR_db/10);
 
 % Initialize result structure with zero
 res.biterrors   = zeros(conf.nframes,1);
@@ -49,7 +53,7 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 % Results
 % Results
-freq_range = 100:100:2000;
+freq_range = 100:100:1000;
 BER_list = zeros(size(freq_range));
 for ii = 1:numel(freq_range)
     conf.f_sym = freq_range(ii);
@@ -131,7 +135,11 @@ for ii = 1:numel(freq_range)
             
         elseif strcmp(conf.audiosystem,'bypass')
             rawrxsignal = rawtxsignal(:,1);
-            rxsignal    = rawrxsignal;
+            if strcmp(conf.noise, 'awgn')
+                rxsignal = rawrxsignal +  sqrt(1/(2*conf.SNR_lin)) * (randn(size(rawrxsignal)) + 1i*randn(size(rawrxsignal))); 
+            else 
+                rxsignal    = rawrxsignal;
+            end
         end
         
         % Plot received signal for debugging
