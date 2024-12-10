@@ -49,7 +49,7 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 % Results
 % Results
-freq_range = 100:100:2000;
+freq_range = 100:100:100;
 BER_list = zeros(size(freq_range));
 for ii = 1:numel(freq_range)
     conf.f_sym = freq_range(ii);
@@ -131,7 +131,10 @@ for ii = 1:numel(freq_range)
             
         elseif strcmp(conf.audiosystem,'bypass')
             rawrxsignal = rawtxsignal(:,1);
-            rxsignal    = rawrxsignal;
+            SNR = 5;
+            SNR_lin = 10^(SNR/10);
+            rxsignal    = rawrxsignal + sqrt(1/2/SNR_lin)*(randn(size(rawrxsignal))+1j*randn(size(rawrxsignal)));
+            %rxsignal    = rawrxsignal;
         end
         
         % Plot received signal for debugging

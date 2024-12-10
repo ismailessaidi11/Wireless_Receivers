@@ -12,7 +12,7 @@
 clear;
 clc;
 % Configuration Values
-conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
+conf.audiosystem = 'matlab'; % Values: 'matlab','native','bypass'
 conf.noise = "awgn";
 
 conf.f_s     = 48000;   % sampling rate  
@@ -53,7 +53,7 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 % Results
 % Results
-freq_range = 100:100:1000;
+freq_range = 100:100:100;
 BER_list = zeros(size(freq_range));
 for ii = 1:numel(freq_range)
     conf.f_sym = freq_range(ii);
