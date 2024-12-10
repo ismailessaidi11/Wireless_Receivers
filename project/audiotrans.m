@@ -53,7 +53,7 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 % Results
 % Results
-freq_range = 100:100:100;
+freq_range = 100:100:200;
 BER_list = zeros(size(freq_range));
 for ii = 1:numel(freq_range)
     conf.f_sym = freq_range(ii);
