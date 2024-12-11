@@ -14,15 +14,13 @@ function [rxbits conf] = rx_ofdm(rxsignal,conf,k)
 %   conf        : configuration structure
 %
 
-
 % Downconversion
 Ts = 1/conf.f_s;
 t = 0:Ts:(length(rxsignal)-1)*Ts;
-rx_downconverted = rxsignal .* exp(-2i*pi*conf.f_c*t.');
+rx_downconverted = rxsignal .* exp(-2i*pi*(conf.f_c/conf.f_s)*t.');
 
 % Low-pass Filter
-f_cutoff = ceil((conf.N+1)/2).*conf.Fspacing;
-rx_baseband = 2*lowpass(rx_downconverted,conf);
+rx_baseband = 2*ofdmlowpass(rx_downconverted,conf);
 
 % Matched filter
 matched_filter = rrc(conf.os_factor, conf.rolloff, conf.rx_filterlen); 
@@ -32,10 +30,15 @@ filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 [idx, phase_of_peak, magnitude_of_peak] = frame_sync(filtered_rxsignal, conf);
 
 % channel estimation and correction
-h = magnitude_of_peak*exp(1j*phase_of_peak);
-corrected_rxsignal = conj(h)/norm(h)^2*filtered_rxsignal;
+%h = magnitude_of_peak*exp(1j*phase_of_peak);
+%corrected_rxsignal = conj(h)/norm(h)^2*filtered_rxsignal;
 
-downsampled_rxsignal = corrected_rxsignal(1+idx : conf.os_factor : idx+conf.os_factor*conf.nsyms-1);
+% 1) extract ofdm symbols (rx_baseband = oversampled train + oversampled ofdm symbols +
+% oversampled CP)
+% 2) use train to estimate channel 
+% 3) fft the data
+num_data_symbols = conf.os_factor*conf.nsyms;
+downsampled_rxsignal = rx_baseband(1+idx : conf.os_factor : idx+conf.os_factor*conf.nsyms-1);
 
 theta_hat = zeros(length(downsampled_rxsignal)+1, 1);
 % Phase estimation

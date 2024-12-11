@@ -38,14 +38,14 @@ conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
 % ofdm conf fields:
 conf.N = 256;       % number of subcarriers
 conf.T = 1/conf.f_sym; % length of an OFDM symbol
-conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_sym;
 conf.CP = 0.5 * conf.T; % half the ofdm symbol length
-
+conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_sym;
+conf.f_cutoff = 2*conf.BW_bb; % experimental VALUE maybe CHANGE LATERRRRRRRRRRRRRRR
 % added conf fields
 conf.tx_filterlen = conf.os_factor * 20 + 1; % maybe change 
 conf.rx_filterlen = conf.os_factor * 20 + 1;
 conf.rolloff = 0.22;
-conf.SNR_db = 1;
+conf.SNR_db = 10;
 conf.SNR_lin = 10^(conf.SNR_db/10);
 
 
@@ -158,7 +158,7 @@ for ii = 1:numel(freq_range)
         % % % % % % % % % % % %
         
         % TODO: Implement rx() Receive Function
-        [rxbits conf]       = rx(rxsignal,conf);
+        [rxbits conf]       = rx_ofdm(rxsignal,conf);
         
         res.rxnbits(k)      = length(rxbits);  
         res.biterrors(k)    = sum(rxbits ~= txbits);

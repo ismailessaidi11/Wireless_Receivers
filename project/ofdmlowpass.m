@@ -1,4 +1,4 @@
-function [after] = ofdmlowpass(before,conf,f)
+function [after] = ofdmlowpass(before,conf)
 % LOWPASS lowpass filter
 % Low pass filter for extracting the baseband signal 
 %
@@ -12,5 +12,5 @@ function [after] = ofdmlowpass(before,conf,f)
 % application. For very high symbol rates and/or low carrier frequencies
 % it might need tweaking.
 %
-after = lowpass(before,f,conf.f_s,StopbandAttenuation=30);
+after = lowpass(before,conf.f_cutoff,conf.f_s,StopbandAttenuation=30);
 
