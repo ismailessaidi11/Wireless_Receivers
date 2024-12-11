@@ -16,7 +16,7 @@ conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
 conf.noise = "awgn";
 
 conf.f_s     = 48000;   % sampling rate  
-conf.f_sym   = 100;     % IS symbol rate the same thing as f_spacing? ???? symbol rate == (5Hz of spacing) 
+conf.f_sym   = 5;     % symbol rate == (5Hz of spacing) 
 conf.nframes = 1;       % number of frames to transmit
 conf.nbits   = 2000;    % number of bits 
 conf.modulation_order = 2; % BPSK:1, QPSK:2
@@ -27,8 +27,10 @@ conf.bitsps     = 16;   % bits per audio sample
 conf.offset     = 0;
 
 
+
 % Init Section
 % all calculations that you only have to do once
+conf.f_sym   = 5;     % IS f_sym the same thing as f_spacing ? 
 conf.os_factor  = conf.f_s/(conf.f_sym); %%%%% SHOULD WE DIVIDE BY N??????? %%%%
 if mod(conf.os_factor,1) ~= 0
    disp('WARNING: Sampling rate must be a multiple of the symbol rate'); 
@@ -38,14 +40,14 @@ conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
 % ofdm conf fields:
 conf.N = 256;       % number of subcarriers
 conf.T = 1/conf.f_sym; % length of an OFDM symbol
-conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_sym;
+conf.BW_bb = ceil(0.5*(N+1))*conf.f_sym;
 conf.CP = 0.5 * conf.T; % half the ofdm symbol length
 
 % added conf fields
-conf.tx_filterlen = conf.os_factor * 20 + 1; % maybe change 
+conf.tx_filterlen = conf.os_factor * 20 + 1;
 conf.rx_filterlen = conf.os_factor * 20 + 1;
 conf.rolloff = 0.22;
-conf.SNR_db = 1;
+conf.SNR_db = -5;
 conf.SNR_lin = 10^(conf.SNR_db/10);
 
 
@@ -69,7 +71,7 @@ for ii = 1:numel(freq_range)
         txbits = randi([0 1],conf.nbits,1);
         
         % TODO: Implement tx() Transmit Function
-        [txsignal conf] = tx_ofdm(txbits,conf,k);
+        [txsignal conf] = tx(txbits,conf,k);
         
         % % % % % % % % % % % %
         % Begin

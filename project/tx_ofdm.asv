@@ -1,0 +1,80 @@
+function [txsignal conf] = tx_ofdm(txbits,conf,k)
+% Digital Transmitter
+%
+%   [txsignal conf] = tx(txbits,conf,k) implements a complete transmitter
+%   consisting of:
+%       - modulator
+%       - pulse shaping filter
+%       - up converter
+%   in digital domain.
+%
+%   txbits  : Information bits
+%   conf    : Universal configuration structure
+%   k       : Frame index
+%
+
+% - no more pulse shaping to the sympbols
+% - pulse shaping for bpsk preamble
+% - osifft instead of upsampling
+% -
+%
+
+txbits = reshape(txbits, length(txbits)/conf.modulation_order, conf.modulation_order);
+
+% Mapping QPSK
+QPSK_Map = (1/sqrt(2)) * [(-1-1j) (-1+1j) ( 1-1j) ( 1+1j)];
+QPSK_symbols = QPSK_Map(bi2de(txbits, 'left-msb')+1).';
+
+% Add training symbols
+
+
+% S/P 
+Ns = length(QPSK_symbols);
+remainder = mod(Ns, conf.N);% Add Padding if necessary
+if remainder ~= 0
+    padding_len = conf.N - remainder;
+    QPSK_symbols(end+1:end+padding_len) = 0; 
+    new_Ns = length(QPSK_symbols);
+end
+num_cols = new_Ns/conf.N;
+p_symbols = reshape(QPSK_symbols, conf.N, new_Ns/conf.N);
+
+% osifft
+for i = 1:num_cols
+    col_symbol = osifft(p_symbols(:,i), conf.os_factor);
+    % Add CP
+    cp = col_symbol(end-conf.CP*conf.os_factor+1 : end);
+    symbols_up(:,i) = [col_symbol ; cp];
+end
+% P/S conversion: concatenate columns into a single serial stream
+symbols_up = symbols_up(:);
+
+% Add preamble to signal 
+preamble = preamble_generate(conf.npreamble);
+preamble = upsample(preamble, conf.os_factor);
+pulse = rrc(conf.os_factor, conf.rolloff, conf.tx_filterlen);
+preamble = conv(preamble,pulse,'same');
+symbols = [preamble ; symbols_up];
+
+% pulse shaping
+tx_baseband_norm = normalize(symbols); % normalize
+
+% upconverting
+Ts = 1/conf.f_s;
+t = 0:Ts:(length(tx_baseband_norm)-1)*Ts;
+txsignal = real(tx_baseband_norm.* exp(-2i*pi*conf.f_c*t.'));
+
+
+figure(3);
+subplot(2,1,1);
+plot(txsignal);
+xline(length(preamble), 'g', 'LineWidth', 3);
+title('Transmitted Signal');
+xlabel('Sample Index');
+ylabel('Amplitude');
+legend('Signal','End of Preamble')
+
+
+% dummy 400Hz sinus generation
+%time = 1:1/conf.f_s:4;
+%txsignal = 0.3*sin(2*pi*400 * time.');

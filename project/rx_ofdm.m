@@ -1,4 +1,4 @@
-function [rxbits conf] = rx(rxsignal,conf,k)
+function [rxbits conf] = rx_ofdm(rxsignal,conf,k)
 % Digital Receiver
 %
 %   [txsignal conf] = tx(txbits,conf,k) implements a complete causal
@@ -21,6 +21,7 @@ t = 0:Ts:(length(rxsignal)-1)*Ts;
 rx_downconverted = rxsignal .* exp(-2i*pi*conf.f_c*t.');
 
 % Low-pass Filter
+f_cutoff = ceil((conf.N+1)/2).*conf.Fspacing;
 rx_baseband = 2*lowpass(rx_downconverted,conf);
 
 % Matched filter

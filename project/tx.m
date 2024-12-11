@@ -13,6 +13,7 @@ function [txsignal conf] = tx(txbits,conf,k)
 %   k       : Frame index
 %
 
+
 txbits = reshape(txbits, length(txbits)/conf.modulation_order, conf.modulation_order);
 
 % Mapping QPSK
@@ -23,8 +24,7 @@ symbols_nopreamble = QPSK_Map(bi2de(txbits, 'left-msb')+1).';
 preamble = preamble_generate(conf.npreamble);
 symbols = [preamble ; symbols_nopreamble];
 
-
-% upsampling
+% upsampling 
 symbol_up = upsample(symbols, conf.os_factor);
 
 % pulse shaping
@@ -35,8 +35,17 @@ tx_baseband_norm = normalize(tx_baseband); % normalize
 % upconverting
 Ts = 1/conf.f_s;
 t = 0:Ts:(length(tx_baseband_norm)-1)*Ts;
-txsignal = cos(2*pi*conf.f_c*t.').*real(tx_baseband_norm)-sin(2*pi*conf.f_c*t.').*imag(tx_baseband_norm);
+txsignal =  real(tx_baseband_norm.* exp(2i*pi*conf.f_c*t.'));
 
+
+figure(3);
+subplot(2,1,1);
+plot(txsignal);
+xline(length(preamble)*conf.os_factor, 'g', 'LineWidth', 3);
+title('Transmitted Signal');
+xlabel('Sample Index');
+ylabel('Amplitude');
+legend('Signal', 'End of Preamble')
 
 % dummy 400Hz sinus generation
 %time = 1:1/conf.f_s:4;
