@@ -18,7 +18,7 @@ conf.noise = "awgn";
 conf.f_s     = 48000;   % sampling rate  
 conf.f_sym   = 100;     % IS symbol rate the same thing as f_spacing? ???? symbol rate == (5Hz of spacing) 
 conf.nframes = 1;       % number of frames to transmit
-conf.nbits   = 2000;    % number of bits 
+conf.nbits   = 4096;    % number of bits 
 conf.modulation_order = 2; % BPSK:1, QPSK:2
 conf.f_c     = 4000;
 
@@ -38,14 +38,14 @@ conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
 % ofdm conf fields:
 conf.N = 256;       % number of subcarriers
 conf.T = 1/conf.f_sym; % length of an OFDM symbol
-conf.CP = 0.5 * conf.T; % half the ofdm symbol length
+conf.CP = 0.5 * conf.N * conf.T; % half the ofdm symbol length (MULTIPLIED BY N ????????????????????? OR NOT)
 conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_sym;
 conf.f_cutoff = 2*conf.BW_bb; % experimental VALUE maybe CHANGE LATERRRRRRRRRRRRRRR
 % added conf fields
 conf.tx_filterlen = conf.os_factor * 20 + 1; % maybe change 
 conf.rx_filterlen = conf.os_factor * 20 + 1;
 conf.rolloff = 0.22;
-conf.SNR_db = 10;
+conf.SNR_db = 100;
 conf.SNR_lin = 10^(conf.SNR_db/10);
 
 
@@ -58,7 +58,7 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 
 % Results
-freq_range = 100:100:100;
+freq_range = 100:100:1000;
 BER_list = zeros(size(freq_range));
 for ii = 1:numel(freq_range)
     conf.f_sym = freq_range(ii);

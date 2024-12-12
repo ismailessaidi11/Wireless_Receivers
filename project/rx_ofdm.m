@@ -17,7 +17,7 @@ function [rxbits conf] = rx_ofdm(rxsignal,conf,k)
 % Downconversion
 Ts = 1/conf.f_s;
 t = 0:Ts:(length(rxsignal)-1)*Ts;
-rx_downconverted = rxsignal .* exp(-2i*pi*(conf.f_c/conf.f_s)*t.');
+rx_downconverted = rxsignal .* exp(-2i*pi*(conf.f_c)*t.');
 
 % Low-pass Filter
 rx_baseband = 2*ofdmlowpass(rx_downconverted,conf);
@@ -33,34 +33,58 @@ filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 %h = magnitude_of_peak*exp(1j*phase_of_peak);
 %corrected_rxsignal = conj(h)/norm(h)^2*filtered_rxsignal;
 
-% 1) extract ofdm symbols (rx_baseband = oversampled train + oversampled ofdm symbols +
-% oversampled CP)
+% 1) extract ofdm symbols (rx_baseband = train_cp + train + cp + ofdm symbols)
 % 2) use train to estimate channel 
 % 3) fft the data
-num_data_symbols = conf.os_factor*conf.nsyms;
-downsampled_rxsignal = rx_baseband(1+idx : conf.os_factor : idx+conf.os_factor*conf.nsyms-1);
 
-theta_hat = zeros(length(downsampled_rxsignal)+1, 1);
-% Phase estimation
-for k = 1 : length(downsampled_rxsignal)
-    % Apply viterbi-viterbi algorithm
-    deltaTheta = 1/4*angle(-downsampled_rxsignal(k)^4) + pi/2*(-1:4);
-    
-    % Unroll phase
-    [~, ind] = min(abs(deltaTheta - theta_hat(k)));
-    theta = deltaTheta(ind);
-    % Lowpass filter phase
-    theta_hat(k+1) = mod(0.01*theta + 0.99*theta_hat(k), 2*pi);
-    
-    % Phase correction
-    downsampled_rxsignal(k) = downsampled_rxsignal(k) * exp(-1j * theta_hat(k+1));
+
+% extract ofdm data
+len_ofdm_symbols = conf.num_ofdm_symbols*(conf.len_ofdm_symbol+conf.len_ofdm_cp);
+ofdm_data = rx_baseband(idx+conf.len_train_data+1 : idx+conf.len_train_data+len_ofdm_symbols);
+% extract train data
+ofdm_train = rx_baseband(1+idx+conf.len_cp_train : idx+conf.len_train_data); % no CP 
+
+% channel estimation
+train_symbols = osfft(ofdm_train, conf.os_factor);
+train_symbols = normalize(train_symbols);
+h = train_symbols.' / conf.train_symbols;
+theta_hat_block = mod(angle(h), 2*pi);
+
+rx_symbols = zeros([conf.N*conf.num_ofdm_symbols 1]);
+for i = 1 : conf.num_ofdm_symbols
+    %extract symbol by symbol (no CP)
+    ofdm_symbol = ofdm_data(1+conf.len_ofdm_cp+(i-1)*(conf.len_ofdm_symbol+conf.len_ofdm_cp):i*(conf.len_ofdm_symbol+conf.len_ofdm_cp));
+    symbol_stream = osfft(ofdm_symbol, conf.os_factor);
+    %channel correction
+    symbol_stream = symbol_stream / abs(h);
+    symbol_stream = symbol_stream * exp(-1i*theta_hat_block);
+    symbol_stream = normalize(symbol_stream);
+    rx_symbols(1+(i-1)*length(symbol_stream):i*length(symbol_stream)) = symbol_stream;
 
 end
 
-plot_constellation(downsampled_rxsignal,  'rx constellation');
+%%
+%theta_hat = zeros(length(downsampled_rxsignal)+1, 1);
+% Phase estimation
+%for k = 1 : length(downsampled_rxsignal)
+    % Apply viterbi-viterbi algorithm
+%    deltaTheta = 1/4*angle(-downsampled_rxsignal(k)^4) + pi/2*(-1:4);
+    
+    % Unroll phase
+%    [~, ind] = min(abs(deltaTheta - theta_hat(k)));
+%    theta = deltaTheta(ind);
+    % Lowpass filter phase
+%    theta_hat(k+1) = mod(0.01*theta + 0.99*theta_hat(k), 2*pi);
+    
+    % Phase correction
+%    downsampled_rxsignal(k) = downsampled_rxsignal(k) * exp(-1j * theta_hat(k+1));
+
+%end
+
+%plot_constellation(rx_symbols,  'rx constellation');
 
 % demapping
-rxbits = QPSK_demapper(downsampled_rxsignal);
+rxbits = QPSK_demapper(rx_symbols);
 
 % dummy 
 %rxbits = zeros(conf.nbits,1);
