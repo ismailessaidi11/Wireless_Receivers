@@ -12,7 +12,7 @@
 clear;
 clc;
 % Configuration Values
-conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
+conf.audiosystem = 'matlab'; % Values: 'matlab','native','bypass'
 conf.noise = "awgn";
 
 conf.f_s     = 48000;   % sampling rate  
@@ -20,9 +20,9 @@ conf.f_spacing   = 5;     % 5Hz of spacing
 conf.nframes = 1;       % number of frames to transmit
 conf.nbits   = 4096;    % number of bits 
 conf.modulation_order = 2; % BPSK:1, QPSK:2
-conf.f_c     = 4000;
+conf.f_c     = 2000;
 
-conf.npreamble  = 100;
+conf.npreamble  = 200;
 conf.bitsps     = 16;   % bits per audio sample
 conf.offset     = 0;
 
@@ -43,10 +43,10 @@ end
 conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
 
 % added conf fields
-conf.tx_filterlen = conf.os_factor * 20 + 1; % maybe change 
-conf.rx_filterlen = conf.os_factor * 20 + 1;
+conf.tx_filterlen = conf.os_factor * 20; % maybe change 
+conf.rx_filterlen = conf.os_factor * 20;
 conf.rolloff = 0.22;
-conf.SNR_db = 100;
+conf.SNR_db = 5;
 conf.SNR_lin = 10^(conf.SNR_db/10);
 
 

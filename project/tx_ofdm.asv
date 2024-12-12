@@ -58,7 +58,7 @@ preamble = normalize(preamble); % normalize
 conf.len_os_preamble = length(preamble); % save length of preamble
 
 % Add training symbols
-train_bits =  randi([0 1],conf.N,1); % length N: equivalent to 1 ofdm symbol
+train_bits = zeros(1, conf.N); % length N: equivalent to 1 ofdm symbol
 conf.train_symbols = 2*train_bits - 1; % convert to BPSK
 train_ofdm_symbols = osifft(conf.train_symbols, conf.os_factor);
 train_cp = train_ofdm_symbols(end-round(conf.CP*conf.os_factor)+1 : end); % Add CP
@@ -76,24 +76,20 @@ frame = [preamble ; train_ofdm_symbols ; s_ofdm_symbols];
 % upconverting
 Ts = 1/conf.f_s;
 t = 0:Ts:(length(frame)-1)*Ts;
-if strcmp(conf.audiosystem,'matlab')
-    txsignal = real(frame.* exp(2i*pi*(conf.f_c/conf.f_s)*t.')); % divide by f_s due to DAC of the Speaker
-    txsignal = real(frame.* exp(2i*pi*(conf.f_c)*t.'));
-
-elseif strcmp(conf.audiosystem,'bypass')
-    txsignal = real(frame.* exp(2i*pi*(conf.f_c)*t.'));
-end
+if (cmp)
+txsignal = real(frame.* exp(2i*pi*(conf.f_c/conf.f_s)*t.'));
 
 
-figure(3);
-subplot(2,1,1);
-plot(txsignal);
-xline(length(preamble), 'g', 'LineWidth', 3);
-xline(length(preamble) + length(train_ofdm_symbols), 'b', 'LineWidth', 3);
-title('Transmitted Signal');
-xlabel('Sample Index');
-ylabel('Amplitude');
-legend('Signal','End of Preamble', 'End of training')
+%figure(3);
+%subplot(2,1,1);
+%plot(txsignal);
+%xline(length(preamble), 'g', 'LineWidth', 3);
+%xline(length(preamble) + length(train_ofdm_symbols), 'b', 'LineWidth', 3);
+
+%title('Transmitted Signal');
+%xlabel('Sample Index');
+%ylabel('Amplitude');
+%legend('Signal','End of Preamble', 'End of training')
 
 
 % dummy 400Hz sinus generation
