@@ -12,7 +12,7 @@ end
 detection_threshold = 10;
 frame_sync_length = conf.npreamble;
 magnitude_of_peak = 0;
-L = conf.os_factor;
+L = conf.os_factor_preamble;
 
 % Calculate the frame synchronization sequence (already mapped in BPSK)
 frame_sync_sequence = preamble_generate(frame_sync_length);

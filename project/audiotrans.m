@@ -16,7 +16,7 @@ conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
 conf.noise = "awgn";
 
 conf.f_s     = 48000;   % sampling rate  
-conf.f_sym   = 100;     % IS symbol rate the same thing as f_spacing? ???? symbol rate == (5Hz of spacing) 
+conf.f_spacing   = 5;     % 5Hz of spacing
 conf.nframes = 1;       % number of frames to transmit
 conf.nbits   = 4096;    % number of bits 
 conf.modulation_order = 2; % BPSK:1, QPSK:2
@@ -26,27 +26,29 @@ conf.npreamble  = 100;
 conf.bitsps     = 16;   % bits per audio sample
 conf.offset     = 0;
 
+% ofdm conf fields:
+conf.N = 256;       % number of subcarriers
+conf.T = 1/conf.f_spacing; % length of an OFDM symbol
+conf.CP = 0.5 * conf.N; % half the ofdm symbol length 
+conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_spacing;
+conf.f_cutoff = 2*conf.BW_bb; % experimental VALUE maybe CHANGE LATERRRRRRRRRRRRRRR
 
 % Init Section
 % all calculations that you only have to do once
-conf.os_factor  = conf.f_s/(conf.f_sym); %%%%% SHOULD WE DIVIDE BY N??????? %%%%
+conf.os_factor  = conf.f_s/(conf.f_spacing*conf.N); 
+conf.os_factor_preamble = 300; % arbitrary value 
 if mod(conf.os_factor,1) ~= 0
    disp('WARNING: Sampling rate must be a multiple of the symbol rate'); 
 end
 conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
 
-% ofdm conf fields:
-conf.N = 256;       % number of subcarriers
-conf.T = 1/conf.f_sym; % length of an OFDM symbol
-conf.CP = 0.5 * conf.N * conf.T; % half the ofdm symbol length (MULTIPLIED BY N ????????????????????? OR NOT)
-conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_sym;
-conf.f_cutoff = 2*conf.BW_bb; % experimental VALUE maybe CHANGE LATERRRRRRRRRRRRRRR
 % added conf fields
 conf.tx_filterlen = conf.os_factor * 20 + 1; % maybe change 
 conf.rx_filterlen = conf.os_factor * 20 + 1;
 conf.rolloff = 0.22;
 conf.SNR_db = 100;
 conf.SNR_lin = 10^(conf.SNR_db/10);
+
 
 
 % Initialize result structure with zero
@@ -58,7 +60,7 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 
 % Results
-freq_range = 100:100:1000;
+freq_range = 100:100:100;
 BER_list = zeros(size(freq_range));
 for ii = 1:numel(freq_range)
     conf.f_sym = freq_range(ii);

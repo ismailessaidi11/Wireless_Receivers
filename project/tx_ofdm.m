@@ -50,12 +50,12 @@ s_ofdm_symbols = normalize(s_ofdm_symbols); % normalize
 
 % Add preamble to signal 
 preamble = preamble_generate(conf.npreamble);
-preamble = upsample(preamble, conf.os_factor);
-pulse = rrc(conf.os_factor, conf.rolloff, conf.tx_filterlen);
+preamble = upsample(preamble, conf.os_factor_preamble);
+pulse = rrc(conf.os_factor_preamble, conf.rolloff, conf.tx_filterlen);
 preamble = conv(preamble,pulse,'same');
 preamble = normalize(preamble); % normalize
 
-conf.len_os_preamble = length(preamble); % save length of train odfm symbol
+conf.len_os_preamble = length(preamble); % save length of preamble
 
 % Add training symbols
 train_bits = zeros(1, conf.N); % length N: equivalent to 1 ofdm symbol

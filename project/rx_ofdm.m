@@ -23,7 +23,7 @@ rx_downconverted = rxsignal .* exp(-2i*pi*(conf.f_c)*t.');
 rx_baseband = 2*ofdmlowpass(rx_downconverted,conf);
 
 % Matched filter
-matched_filter = rrc(conf.os_factor, conf.rolloff, conf.rx_filterlen); 
+matched_filter = rrc(conf.os_factor_preamble, conf.rolloff, conf.rx_filterlen); 
 filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 
 % frame synch 
