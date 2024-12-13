@@ -39,7 +39,7 @@ for ii = 1:numel(nbits)
         
         if(strcmp(conf.image, 'yes'))
             % Read Image and converts it to bit stream
-            filename = '/tx_image_64.jpg';
+            filename = '/tx_image_256.jpg';
             [txbits, conf] = conv_image_to_bits(filename, conf);
         else
             % Generate random data

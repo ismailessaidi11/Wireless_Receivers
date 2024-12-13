@@ -99,7 +99,7 @@ if (strcmp(conf.image, 'yes'))
     imshow(rx_image);
     title('Reassembled Image');
     
-    filename = '/rx_image_64.jpg';
+    filename = '/rx_image_256.jpg';
     output_path = fullfile(conf.image_folder_path, filename); % Create the full file path
     % Save the image
     imwrite(rx_image, output_path);
