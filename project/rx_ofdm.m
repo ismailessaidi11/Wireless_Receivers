@@ -35,7 +35,7 @@ matched_filter = rrc(conf.os_factor_preamble, conf.rolloff, conf.rx_filterlen);
 filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 
 % frame synch 
-[idx, phase_of_peak, magnitude_of_peak] = frame_sync(filtered_rxsignal, conf); %check if it gives the right idx (NOT SUUUUURE)
+[idx, ~, ~] = frame_sync(filtered_rxsignal, conf); %check if it gives the right idx (NOT SUUUUURE)
 
 % extract ofdm data
 len_ofdm_symbols = conf.num_ofdm_symbols*(conf.len_ofdm_symbol+conf.len_ofdm_cp);
@@ -65,10 +65,9 @@ xlabel("Subcarrier index")
 title("Phase of H")
 
 for i = 1 : conf.num_ofdm_symbols
-    %extract symbol by symbol (no CP)
+    % Extract symbol by symbol (no CP)
     ofdm_symbol = ofdm_data(1+conf.len_ofdm_cp+(i-1)*(conf.len_ofdm_symbol+conf.len_ofdm_cp):i*(conf.len_ofdm_symbol+conf.len_ofdm_cp));
     symbol_stream = osfft(ofdm_symbol, conf.os_factor);
-    %plot_constellation(symbol_stream,  'FFT');
 
     % Phase estimation 
     theta_hat = viterbi(symbol_stream, theta_hat); 
@@ -76,29 +75,10 @@ for i = 1 : conf.num_ofdm_symbols
     %channel correction (amplitude and phase)
     symbol_stream = symbol_stream ./ abs(h);
     symbol_stream = symbol_stream .* exp(-1j * theta_hat);
-    symbol_stream = normalize(symbol_stream);
 
     % fill up rx_symbols
     rx_symbols(1+(i-1)*length(symbol_stream):i*length(symbol_stream)) = symbol_stream;
 end
-
-%%
-%theta_hat = zeros(length(downsampled_rxsignal)+1, 1);
-% Phase estimation
-%for k = 1 : length(downsampled_rxsignal)
-    % Apply viterbi-viterbi algorithm
-%    deltaTheta = 1/4*angle(-downsampled_rxsignal(k)^4) + pi/2*(-1:4);
-    
-    % Unroll phase
-%    [~, ind] = min(abs(deltaTheta - theta_hat(k)));
-%    theta = deltaTheta(ind);
-    % Lowpass filter phase
-%    theta_hat(k+1) = mod(0.01*theta + 0.99*theta_hat(k), 2*pi);
-    
-    % Phase correction
-%    downsampled_rxsignal(k) = downsampled_rxsignal(k) * exp(-1j * theta_hat(k+1));
-
-%end
 
 plot_constellation(rx_symbols,  'rx constellation');
 
@@ -106,5 +86,23 @@ plot_constellation(rx_symbols,  'rx constellation');
 rxbits = QPSK_demapper(rx_symbols);
 rxbits = rxbits(1:conf.nbits);
 
+% Show Image and Save it to images folder
+if (strcmp(conf.image, 'yes'))
+    % Convert bit stream back to pixel values
+    pixels = uint8(bin2dec(reshape(char(rxbits + '0'), 8, []).')); % Convert binary to decimal
+        
+    % Reshape into grayscale format
+    rx_image = reshape(pixels, conf.image_w, conf.image_h);
+    
+    % Display the image
+    figure;
+    imshow(rx_image);
+    title('Reassembled Image');
+    
+    filename = '/rx_image_64.jpg';
+    output_path = fullfile(conf.image_folder_path, filename); % Create the full file path
+    % Save the image
+    imwrite(rx_image, output_path);
+end
 % dummy 
 %rxbits = zeros(conf.nbits,1);

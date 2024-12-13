@@ -11,45 +11,14 @@
 %   - 'bypass' : no audio transmission, takes txsignal as received signal
 clear;
 clc;
-% Configuration Values
-conf.audiosystem = 'bypass'; % Values: 'matlab','native','bypass'
-conf.noise = "awgn";
 
-conf.f_s     = 48000;   % sampling rate  
-conf.f_sym   = 5;     % symbol rate == (5Hz of spacing) 
-conf.nframes = 1;       % number of frames to transmit
-conf.nbits   = 2000;    % number of bits 
-conf.modulation_order = 2; % BPSK:1, QPSK:2
-conf.f_c     = 4000;
+f_s         = 48000;  % sampling frequency  
+f_spacing   = 5;      % frequncy pacing between subcarriers
+nbits       = 4096;   % Num of bits
+f_c         = 2000;   % Carrier Frequency
+N           = 256;    % Number of subcarriers
 
-conf.npreamble  = 100;
-conf.bitsps     = 16;   % bits per audio sample
-conf.offset     = 0;
-
-
-
-% Init Section
-% all calculations that you only have to do once
-conf.f_sym   = 5;     % IS f_sym the same thing as f_spacing ? 
-conf.os_factor  = conf.f_s/(conf.f_sym); %%%%% SHOULD WE DIVIDE BY N??????? %%%%
-if mod(conf.os_factor,1) ~= 0
-   disp('WARNING: Sampling rate must be a multiple of the symbol rate'); 
-end
-conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
-
-% ofdm conf fields:
-conf.N = 256;       % number of subcarriers
-conf.T = 1/conf.f_sym; % length of an OFDM symbol
-conf.BW_bb = ceil(0.5*(N+1))*conf.f_sym;
-conf.CP = 0.5 * conf.T; % half the ofdm symbol length
-
-% added conf fields
-conf.tx_filterlen = conf.os_factor * 20 + 1;
-conf.rx_filterlen = conf.os_factor * 20 + 1;
-conf.rolloff = 0.22;
-conf.SNR_db = -5;
-conf.SNR_lin = 10^(conf.SNR_db/10);
-
+conf = config(f_s, f_spacing, nbits, f_c, N);
 
 % Initialize result structure with zero
 res.biterrors   = zeros(conf.nframes,1);
@@ -59,19 +28,26 @@ res.rxnbits     = zeros(conf.nframes,1);
 % beforehand.
 
 
+
 % Results
-freq_range = 100:100:100;
-BER_list = zeros(size(freq_range));
-for ii = 1:numel(freq_range)
-    conf.f_sym = freq_range(ii);
+nbits = 4096:500:4096; % Discuss the maximum number of bits per frame before phase tracking 
+BER_list = zeros(size(nbits));
+for ii = 1:numel(nbits)
+    conf.nbits = nbits(ii);
 
     for k=1:conf.nframes
         
-        % Generate random data
-        txbits = randi([0 1],conf.nbits,1);
+        if(strcmp(conf.image, 'yes'))
+            % Read Image and converts it to bit stream
+            filename = '/tx_image_64.jpg';
+            txbits = conv_image_to_bits(filename, conf);
+        else
+            % Generate random data
+            txbits = randi([0 1],conf.nbits,1);
+        end
         
         % TODO: Implement tx() Transmit Function
-        [txsignal conf] = tx(txbits,conf,k);
+        [txsignal conf] = tx_ofdm(txbits,conf,k);
         
         % % % % % % % % % % % %
         % Begin
@@ -86,7 +62,7 @@ for ii = 1:numel(freq_range)
         rawtxsignal = [ zeros(conf.f_s,1) ; normtxsignal ;  zeros(conf.f_s,1) ]; % add padding before and after the signal
         rawtxsignal = [  rawtxsignal  zeros(size(rawtxsignal)) ]; % add second channel: no signal
         txdur       = length(rawtxsignal)/conf.f_s; % calculate length of transmitted signal
-        
+        display('TX signal durati', txdur);
         % wavwrite(rawtxsignal,conf.f_s,16,'out.wav')   
         audiowrite('out.wav',rawtxsignal,conf.f_s)  
         
@@ -160,7 +136,7 @@ for ii = 1:numel(freq_range)
         % % % % % % % % % % % %
         
         % TODO: Implement rx() Receive Function
-        [rxbits conf]       = rx(rxsignal,conf);
+        [rxbits conf]       = rx_ofdm(rxsignal,conf);
         
         res.rxnbits(k)      = length(rxbits);  
         res.biterrors(k)    = sum(rxbits ~= txbits);
@@ -172,8 +148,8 @@ for ii = 1:numel(freq_range)
 end
 
 figure;
-semilogy(freq_range, BER_list, 'bx-' ,'LineWidth',3)
+semilogy(nbits, BER_list, 'bx-' ,'LineWidth',3)
 
-xlabel('Symbol rate')
+xlabel('Number of bits')
 ylabel('BER')
 grid on

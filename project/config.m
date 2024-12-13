@@ -2,7 +2,8 @@ function conf = config(f_s, f_spacing, nbits, f_c, N)
 % Configuration Values
 
 conf.audiosystem = 'matlab'; % Values: 'matlab','native','bypass'
-conf.noise = "awgn";
+conf.noise = 'awgn';
+conf.image = 'yes';
 
 conf.f_s     = f_s;   % sampling rate  
 conf.f_spacing   = f_spacing;     % 5Hz of spacing
@@ -17,7 +18,7 @@ conf.offset     = 0;
 
 % ofdm conf fields:
 conf.N = N;       % number of subcarriers
-conf.T = 1/conf.f_spacing; % length of an OFDM symbol
+conf.T = 1/conf.f_spacing; % length of a subcarrier
 conf.CP = 0.5 * conf.N; % half the ofdm symbol length 
 conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_spacing;
 conf.f_cutoff = 2*conf.BW_bb; % experimental VALUE maybe CHANGE LATERRRRRRRRRRRRRRR
@@ -35,8 +36,10 @@ conf.nsyms      = ceil(conf.nbits/conf.modulation_order); % number of symbols
 conf.tx_filterlen = conf.os_factor * 20; % maybe change 
 conf.rx_filterlen = conf.os_factor * 20;
 conf.rolloff = 0.22;
-conf.SNR_db = 10;
+conf.SNR_db = 100;
 conf.SNR_lin = 10^(conf.SNR_db/10);
+
+conf.image_folder_path = 'images';
 
 end
 

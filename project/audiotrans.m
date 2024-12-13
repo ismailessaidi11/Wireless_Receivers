@@ -12,11 +12,11 @@
 clear;
 clc;
 
-f_s     = 48000;   % sampling rate  
-f_spacing = 5;
-nbits = 4096;
-f_c = 2000;
-N = 256;
+f_s         = 48000;  % sampling frequency  
+f_spacing   = 5;      % frequncy pacing between subcarriers
+nbits       = 4096;   % Num of bits
+f_c         = 2000;   % Carrier Frequency
+N           = 256;    % Number of subcarriers
 
 conf = config(f_s, f_spacing, nbits, f_c, N);
 
@@ -28,16 +28,23 @@ res.rxnbits     = zeros(conf.nframes,1);
 % beforehand.
 
 
+
 % Results
-nbits = 2048:500:2048;
+nbits = 4096:500:4096; % Discuss the maximum number of bits per frame before phase tracking 
 BER_list = zeros(size(nbits));
 for ii = 1:numel(nbits)
     conf.nbits = nbits(ii);
 
     for k=1:conf.nframes
         
-        % Generate random data
-        txbits = randi([0 1],conf.nbits,1);
+        if(strcmp(conf.image, 'yes'))
+            % Read Image and converts it to bit stream
+            filename = '/tx_image_64.jpg';
+            [txbits, conf] = conv_image_to_bits(filename, conf);
+        else
+            % Generate random data
+            txbits = randi([0 1],conf.nbits,1);
+        end
         
         % TODO: Implement tx() Transmit Function
         [txsignal conf] = tx_ofdm(txbits,conf,k);
@@ -55,7 +62,7 @@ for ii = 1:numel(nbits)
         rawtxsignal = [ zeros(conf.f_s,1) ; normtxsignal ;  zeros(conf.f_s,1) ]; % add padding before and after the signal
         rawtxsignal = [  rawtxsignal  zeros(size(rawtxsignal)) ]; % add second channel: no signal
         txdur       = length(rawtxsignal)/conf.f_s; % calculate length of transmitted signal
-        
+        disp(['TX signal duration: ', num2str(txdur)]);
         % wavwrite(rawtxsignal,conf.f_s,16,'out.wav')   
         audiowrite('out.wav',rawtxsignal,conf.f_s)  
         
@@ -132,9 +139,11 @@ for ii = 1:numel(nbits)
         [rxbits conf]       = rx_ofdm(rxsignal,conf);
         
         res.rxnbits(k)      = length(rxbits);  
+        
         res.biterrors(k)    = sum(rxbits ~= txbits);
         
     end
+    
     per = sum(res.biterrors > 0)/conf.nframes;
     ber = sum(res.biterrors)/sum(res.rxnbits);
     BER_list(ii) = ber;
