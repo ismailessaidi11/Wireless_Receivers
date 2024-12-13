@@ -29,8 +29,10 @@ QPSK_symbols = QPSK_Map(bi2de(txbits, 'left-msb')+1).';
 Ns = length(QPSK_symbols);
 remainder = mod(Ns, conf.N);    % Add Padding if necessary
 if remainder ~= 0
-    padding_len = conf.N - remainder;
-    QPSK_symbols(end+1:end+padding_len) = 0; 
+    padding_len = conf.N - remainder;        
+    padding_bits = randi([0 1],padding_len,1); % Random bits for padding
+    padding_symbols = QPSK_Map(bi2de(padding_bits, 'left-msb')+1).';
+    QPSK_symbols(end+1:end+padding_len) = padding_symbols; 
 end
 conf.num_ofdm_symbols = length(QPSK_symbols)/conf.N;
 p_QPSK_symbols = reshape(QPSK_symbols, conf.N, length(QPSK_symbols)/conf.N);

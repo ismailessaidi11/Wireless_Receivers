@@ -14,6 +14,14 @@ function [rxbits conf] = rx_ofdm(rxsignal,conf,k)
 %   conf        : configuration structure
 %
 
+figure(1);
+subplot(2,1,1);
+plot(rxsignal);
+title('Received Signal');
+xlabel('Sample Index');
+ylabel('Amplitude');
+legend('Signal')
+
 % Downconversion
 Ts = 1/conf.f_s;
 t = 0:Ts:(length(rxsignal)-1)*Ts;
@@ -29,15 +37,6 @@ filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 % frame synch 
 [idx, phase_of_peak, magnitude_of_peak] = frame_sync(filtered_rxsignal, conf); %check if it gives the right idx (NOT SUUUUURE)
 
-% channel estimation and correction
-%h = magnitude_of_peak*exp(1j*phase_of_peak);
-%corrected_rxsignal = conj(h)/norm(h)^2*filtered_rxsignal;
-
-% 1) extract ofdm symbols (rx_baseband = train_cp + train + cp + ofdm symbols)
-% 2) use train to estimate channel 
-% 3) fft the data
-
-
 % extract ofdm data
 len_ofdm_symbols = conf.num_ofdm_symbols*(conf.len_ofdm_symbol+conf.len_ofdm_cp);
 ofdm_data = rx_baseband(idx+conf.len_train_data+1 : idx+conf.len_train_data+len_ofdm_symbols);
@@ -51,6 +50,7 @@ theta_hat = mod(angle(h), 2*pi);
 
 rx_symbols = zeros([conf.N*conf.num_ofdm_symbols 1]);
 
+% plot the Channel 
 figure(4);
 subplot(2,1,1);
 plot(abs(h))
@@ -104,6 +104,7 @@ plot_constellation(rx_symbols,  'rx constellation');
 
 % demapping
 rxbits = QPSK_demapper(rx_symbols);
+rxbits = rxbits(1:conf.nbits);
 
 % dummy 
 %rxbits = zeros(conf.nbits,1);
