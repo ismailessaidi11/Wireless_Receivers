@@ -77,8 +77,8 @@ frame = [preamble ; train_ofdm_symbols ; s_ofdm_symbols];
 Ts = 1/conf.f_s;
 t = 0:Ts:(length(frame)-1)*Ts;
 if strcmp(conf.audiosystem,'matlab')
-    txsignal = real(frame.* exp(2i*pi*(conf.f_c/conf.f_s)*t.')); % divide by f_s due to DAC of the Speaker
-    txsignal = real(frame.* exp(2i*pi*(conf.f_c)*t.'));
+    %txsignal = real(frame.* exp(2i*pi*(conf.f_c/conf.f_s)*t.')); % divide by f_s due to DAC of the Speaker
+    txsignal = real(frame.* exp(2i*pi*(conf.f_c)*t.')); % WE SHHOULDN't divide by f_s
 
 elseif strcmp(conf.audiosystem,'bypass')
     txsignal = real(frame.* exp(2i*pi*(conf.f_c)*t.'));
