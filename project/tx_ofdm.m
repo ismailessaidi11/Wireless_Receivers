@@ -61,7 +61,7 @@ preamble = normalize(preamble); % normalize
 
 
 % Add training symbols
-train_bits =  randi([0 1],conf.N,1); % length N: equivalent to 1 ofdm symbol
+train_bits =  randi([0 1],conf.N,1); % PSEUDO RANDOM NOT RANDOOM !! length N: equivalent to 1 ofdm symbol 
 conf.train_symbols = 2*train_bits - 1; % convert to BPSK
 train_ofdm_symbols = osifft(conf.train_symbols, conf.os_factor);
 train_cp = train_ofdm_symbols(end-round(conf.CP*conf.os_factor)+1 : end); % Add CP
@@ -83,15 +83,15 @@ txsignal = real(frame.* exp(2i*pi*(conf.f_c)*t.'));
 
 
 
-figure(3);
-subplot(2,1,1);
-plot(txsignal);
-xline(length(preamble), 'g', 'LineWidth', 3);
-xline(length(preamble) + length(train_ofdm_symbols), 'b', 'LineWidth', 3);
-title('Transmitted Signal');
-xlabel('Sample Index');
-ylabel('Amplitude');
-legend('Signal','End of Preamble', 'End of training')
+%figure;
+%subplot(2,1,1);
+%plot(txsignal);
+%xline(length(preamble), 'g', 'LineWidth', 3);
+%xline(length(preamble) + length(train_ofdm_symbols), 'b', 'LineWidth', 3);
+%title('Transmitted Signal');
+%xlabel('Sample Index');
+%ylabel('Amplitude');
+%legend('Signal','End of Preamble', 'End of training')
 
 
 % dummy 400Hz sinus generation

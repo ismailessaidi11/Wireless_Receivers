@@ -3,7 +3,7 @@ function conf = config(f_s, f_spacing, nbits, f_c, N)
 
 conf.audiosystem = 'matlab'; % Values: 'matlab','native','bypass'
 conf.noise = 'awgn';
-conf.image = 'yes';
+conf.image = 'no';
 
 conf.f_s     = f_s;   % sampling rate  
 conf.f_spacing   = f_spacing;     % 5Hz of spacing
@@ -19,14 +19,15 @@ conf.offset     = 0;
 % ofdm conf fields:
 conf.N = N;       % number of subcarriers
 conf.T = 1/conf.f_spacing; % length of a subcarrier
-conf.CP = 0.5 * conf.N; % half the ofdm symbol length 
+conf.cp_coef = 0.8;
+conf.CP = conf.cp_coef * conf.N; 
 conf.BW_bb = ceil(0.5*(conf.N+1))*conf.f_spacing;
 conf.f_cutoff = 2*conf.BW_bb; % experimental VALUE maybe CHANGE LATERRRRRRRRRRRRRRR
 
 % Init Section
 % all calculations that you only have to do once
 conf.os_factor  = conf.f_s/(conf.f_spacing*conf.N); 
-conf.os_factor_preamble = 300; % arbitrary value 
+conf.os_factor_preamble = 50; 
 if mod(conf.os_factor,1) ~= 0
    disp('WARNING: Sampling rate must be a multiple of the symbol rate'); 
 end

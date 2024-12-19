@@ -10,7 +10,9 @@ for i = 1: length(symbol_stream)
     [~, ind] = min(abs(deltaTheta - old_theta(i)));
     theta = deltaTheta(ind);
     % Lowpass filter phase
-    theta_hat(i) = mod(0.01*theta + 0.99*old_theta(i), 2*pi);
+    % If karaoke mic : 0.01 ; 0.99
+    % If other mic : 0.08 ; 0.92
+    theta_hat(i) = mod(0.01*theta + 0.99*old_theta(i), 2*pi); 
 end
 end
 

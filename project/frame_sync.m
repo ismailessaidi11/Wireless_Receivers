@@ -35,7 +35,6 @@ for i = L * frame_sync_length + 1 : length(rx_signal)
         if (T > current_peak_value)
             beginning_of_data = i;
             phase_of_peak = mod(angle(c),2*pi);
-            %TODO
             magnitude_of_peak =abs(c)/frame_sync_length;
 
             current_peak_value = T;

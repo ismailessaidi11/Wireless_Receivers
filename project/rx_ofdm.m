@@ -14,13 +14,13 @@ function [rxbits conf] = rx_ofdm(rxsignal,conf,k)
 %   conf        : configuration structure
 %
 
-figure(1);
-subplot(2,1,1);
-plot(rxsignal);
-title('Received Signal');
-xlabel('Sample Index');
-ylabel('Amplitude');
-legend('Signal')
+%figure;
+%subplot(2,1,1);
+%plot(rxsignal);
+%title('Received Signal');
+%xlabel('Sample Index');
+%ylabel('Amplitude');
+%legend('Signal')
 
 % Downconversion
 Ts = 1/conf.f_s;
@@ -28,58 +28,44 @@ t = 0:Ts:(length(rxsignal)-1)*Ts;
 rx_downconverted = rxsignal .* exp(-2i*pi*(conf.f_c)*t.');
 
 % Low-pass Filter
-rx_baseband = 2*ofdmlowpass(rx_downconverted,conf); % NOT SURE ABOUT THE 2*
+rx_baseband = 2*ofdmlowpass(rx_downconverted,conf); 
 
 % Matched filter
 matched_filter = rrc(conf.os_factor_preamble, conf.rolloff, conf.rx_filterlen); 
 filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 
 % frame synch 
-[idx, ~, ~] = frame_sync(filtered_rxsignal, conf); %check if it gives the right idx (NOT SUUUUURE)
+[idx, ~ , ~] = frame_sync(filtered_rxsignal, conf); 
 
 % extract ofdm data
 len_ofdm_symbols = conf.num_ofdm_symbols*(conf.len_ofdm_symbol+conf.len_ofdm_cp);
 ofdm_data = rx_baseband(idx+conf.len_train_data+1 : idx+conf.len_train_data+len_ofdm_symbols);
-% extract train data
+% extract train ofdm
 ofdm_train = rx_baseband(1+idx+conf.len_cp_train : idx+conf.len_train_data); % no CP 
 
 % channel estimation
 train_symbols = osfft(ofdm_train, conf.os_factor);
-h = train_symbols ./ conf.train_symbols;
-theta_hat = mod(angle(h), 2*pi);
+H = train_symbols ./ conf.train_symbols;
+theta_hat = mod(angle(H), 2*pi);
+
+plot_channel_measurements(conf, H, theta_hat);
 
 rx_symbols = zeros([conf.N*conf.num_ofdm_symbols 1]);
-
-% plot the Channel 
-figure(4);
-subplot(2,1,1);
-plot(abs(h))
-xlabel("Subcarrier index")
-ylabel("Magnitude")
-title("Magnitude of H")
-figure(4);
-subplot(2,1,2);
-plot(theta_hat)
-ylabel("Subcarrier angle [rad]")
-xlabel("Subcarrier index")
-title("Phase of H")
-
 for i = 1 : conf.num_ofdm_symbols
     % Extract symbol by symbol (no CP)
     ofdm_symbol = ofdm_data(1+conf.len_ofdm_cp+(i-1)*(conf.len_ofdm_symbol+conf.len_ofdm_cp):i*(conf.len_ofdm_symbol+conf.len_ofdm_cp));
     symbol_stream = osfft(ofdm_symbol, conf.os_factor);
 
-    % Phase estimation 
+    % Phase tracking 
     theta_hat = viterbi(symbol_stream, theta_hat); 
     
-    %channel correction (amplitude and phase)
-    symbol_stream = symbol_stream ./ abs(h);
+    % channel correction (amplitude and phase)
+    symbol_stream = symbol_stream ./ abs(H);
     symbol_stream = symbol_stream .* exp(-1j * theta_hat);
 
     % fill up rx_symbols
     rx_symbols(1+(i-1)*length(symbol_stream):i*length(symbol_stream)) = symbol_stream;
 end
-
 plot_constellation(rx_symbols,  'rx constellation');
 
 % demapping
@@ -97,7 +83,7 @@ if (strcmp(conf.image, 'yes'))
     % Display the image
     figure;
     imshow(rx_image);
-    title('Reassembled Image');
+    title('Reassembled Image (Bad channel conditions)');
     
     filename = '/rx_image_256.jpg';
     output_path = fullfile(conf.image_folder_path, filename); % Create the full file path

@@ -13,7 +13,7 @@ clear;
 clc;
 
 f_s         = 48000;  % sampling frequency  
-f_spacing   = 5;      % frequncy pacing between subcarriers
+f_spacing   = 5;      % freqeuncy pacing between subcarriers
 nbits       = 4096;   % Num of bits
 f_c         = 2000;   % Carrier Frequency
 N           = 256;    % Number of subcarriers
@@ -30,11 +30,28 @@ res.rxnbits     = zeros(conf.nframes,1);
 
 
 % Results
-nbits = 4096:500:4096; % Discuss the maximum number of bits per frame before phase tracking 
-BER_list = zeros(size(nbits));
-for ii = 1:numel(nbits)
-    conf.nbits = nbits(ii);
+conf.plot_path = 'plots/';  
+conf.ber_path = 'plots/BER/';
+conf.spectral_eff_path  = 'plots/spectral_efficiency/';
+conf.channel_path  = 'plots/channel/';
 
+
+if ~exist(conf.plot_path, 'dir')
+    mkdir(conf.plot_path); 
+    mkdir('plots/BER/');
+    mkdir('plots/spectral_efficiency/');
+    mkdir('plots/channel/');
+
+end
+
+nbits = 4096; 
+simulated_param.values = nbits;
+simulated_param.name = "nbits";
+BER_list = zeros(size(simulated_param.values));
+eta_list = zeros(size(simulated_param.values));
+for ii = 1:numel(simulated_param.values)
+    conf.(simulated_param.name) = simulated_param.values(ii);
+    disp(simulated_param.values(ii));
     for k=1:conf.nframes
         
         if(strcmp(conf.image, 'yes'))
@@ -66,43 +83,8 @@ for ii = 1:numel(nbits)
         % wavwrite(rawtxsignal,conf.f_s,16,'out.wav')   
         audiowrite('out.wav',rawtxsignal,conf.f_s)  
         
-        % Platform native audio mode 
-        if strcmp(conf.audiosystem,'native')
-            
-            % Windows WAV mode 
-            if ispc()
-                disp('Windows WAV');
-                playobj = audioplayer(rawtxsignal, conf.f_s);
-                recobj = audiorecorder(conf.f_s, conf.bitsps, 1); % 1 channel for mono recording
-                
-                % Start recording and playback
-                record(recobj); % Start recording
-                disp('Recording in Progress');
-                playblocking(playobj); % Play the signal and block execution until done
-                pause(0.5); % Optional pause to ensure recording captures entire signal
-                stop(recobj); % Stop recording
-                disp('Recording complete');
-    
-                % Retrieve recorded data
-                rawrxsignal = getaudiodata(recobj, 'int16'); % Retrieve as 16-bit integers
-                rxsignal = double(rawrxsignal) / double(intmax('int16')); % Normalize recorded signal
-    
-    
-            % ALSA WAV mode 
-            elseif isunix()
-                disp('Linux ALSA');
-                cmd = sprintf('arecord -c 2 -r %d -f s16_le  -d %d in.wav &',conf.f_s,ceil(txdur)+1);
-                system(cmd); 
-                disp('Recording in Progress');
-                system('aplay  out.wav')
-                pause(2);
-                disp('Recording complete')
-                rawrxsignal = audioread('in.wav');
-                rxsignal    = rawrxsignal(1:end,1);
-            end
-            
         % MATLAB audio mode
-        elseif strcmp(conf.audiosystem,'matlab')
+        if strcmp(conf.audiosystem,'matlab')
             disp('MATLAB generic');
             playobj = audioplayer(rawtxsignal,conf.f_s,conf.bitsps);
             recobj  = audiorecorder(conf.f_s,conf.bitsps,1);
@@ -143,15 +125,30 @@ for ii = 1:numel(nbits)
         res.biterrors(k)    = sum(rxbits ~= txbits);
         
     end
-    
+    eta_list(ii)  = spectral_efficiency(conf);
+
     per = sum(res.biterrors > 0)/conf.nframes;
     ber = sum(res.biterrors)/sum(res.rxnbits);
-    BER_list(ii) = ber;
+    disp(ber);
+    BER_list(ii) = ber + 10^-9;
 end
 
+% Plot Spectral efficiency
 figure;
-semilogy(nbits, BER_list, 'bx-' ,'LineWidth',3)
+semilogy(simulated_param.values, eta_list, 'bx-', 'LineWidth', 3);
+xlabel(simulated_param.name);
+ylabel('Spectral Efficiency');
+grid on;
+title(sprintf('Spectral Efficiency in terms of %s ()Reflections', simulated_param.name));
+fileName = sprintf('%s.png', simulated_param.name);         
+saveas(gcf, fullfile(conf.spectral_eff_path, fileName));
 
-xlabel('Number of bits')
-ylabel('BER')
-grid on
+% Plot the BER
+figure;
+semilogy(simulated_param.values, BER_list, 'bx-', 'LineWidth', 3);
+xlabel(simulated_param.name);
+ylabel('BER');
+grid on;
+title(sprintf('BER in terms of %s (Reflections)', simulated_param.name));
+fileName = sprintf('%s.png', simulated_param.name);       
+saveas(gcf, fullfile(conf.ber_path, fileName)); 

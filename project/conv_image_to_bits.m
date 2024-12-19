@@ -4,7 +4,7 @@ function [txbits, conf] = conv_image_to_bits(filename, conf)
 image_path = fullfile(conf.image_folder_path, filename); 
 image = imread(image_path);
 
-% Convert to grayscale (optional, for simplicity)
+% Convert to grayscale
 if size(image, 3) == 3
     image = rgb2gray(image);
 end
