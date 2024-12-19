@@ -11,6 +11,10 @@
 %   - 'bypass' : no audio transmission, takes txsignal as received signal
 clear;
 clc;
+addpath('RX/');
+addpath('TX/');
+addpath('common/');
+
 
 f_s         = 48000;  % sampling frequency  
 f_spacing   = 5;      % freqeuncy pacing between subcarriers
@@ -45,13 +49,14 @@ if ~exist(conf.plot_path, 'dir')
 end
 
 nbits = 4096; 
-simulated_param.values = nbits;
-simulated_param.name = "nbits";
-BER_list = zeros(size(simulated_param.values));
-eta_list = zeros(size(simulated_param.values));
-for ii = 1:numel(simulated_param.values)
-    conf.(simulated_param.name) = simulated_param.values(ii);
-    disp(simulated_param.values(ii));
+simulation.param_values = nbits;
+simulation.param_name = "nbits";
+simulation.channel_condition = "good channel";
+BER_list = zeros(size(simulation.param_values));
+eta_list = zeros(size(simulation.param_values));
+for ii = 1:numel(simulation.param_values)
+    conf.(simulation.param_name) = simulation.param_values(ii);
+    disp(simulation.param_values(ii));
     for k=1:conf.nframes
         
         if(strcmp(conf.image, 'yes'))
@@ -135,20 +140,20 @@ end
 
 % Plot Spectral efficiency
 figure;
-semilogy(simulated_param.values, eta_list, 'bx-', 'LineWidth', 3);
-xlabel(simulated_param.name);
+semilogy(simulation.param_values, eta_list, 'bx-', 'LineWidth', 3);
+xlabel(simulation.param_name);
 ylabel('Spectral Efficiency');
 grid on;
-title(sprintf('Spectral Efficiency in terms of %s ()Reflections', simulated_param.name));
-fileName = sprintf('%s.png', simulated_param.name);         
+title(sprintf('Spectral Efficiency in terms of %s (%s)', simulation.param_name, simulation.channel_condition));
+fileName = sprintf('%s.png', simulation.param_name);         
 saveas(gcf, fullfile(conf.spectral_eff_path, fileName));
 
 % Plot the BER
 figure;
-semilogy(simulated_param.values, BER_list, 'bx-', 'LineWidth', 3);
-xlabel(simulated_param.name);
+semilogy(simulation.param_values, BER_list, 'bx-', 'LineWidth', 3);
+xlabel(simulation.param_name);
 ylabel('BER');
 grid on;
-title(sprintf('BER in terms of %s (Reflections)', simulated_param.name));
-fileName = sprintf('%s.png', simulated_param.name);       
+title(sprintf('BER in terms of %s (%s)', simulation.param_name, simulation.channel_condition));
+fileName = sprintf('%s.png', simulation.param_name);       
 saveas(gcf, fullfile(conf.ber_path, fileName)); 
