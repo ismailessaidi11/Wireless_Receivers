@@ -1,5 +1,6 @@
-function preamble = preamble_generate(preamble_len)
-% A linear feedback shift register (LFSR) which outputs a PN sequence of length output_length.
+function preamble = lfsr_generate(len)
+% A linear feedback shift register (LFSR) which outputs a PN sequence of
+% length output_length in BPSK mapping.
 % The current LFSR has a period length of 255, but the polynomial can easily be changed for a longer one.
 
 % The implementation of this shift register is not very efficient, bit operations would be faster.
@@ -14,9 +15,9 @@ polynomial = [1 0 1 1 1 0 0 0]';
 % All memories are initialized with ones
 state = ones(size(polynomial));
 
-preamble = zeros(preamble_len, 1);
+preamble = zeros(len, 1);
 
-for i = 1:preamble_len,
+for i = 1:len
     preamble(i) = state(1);
     feedback = mod(sum(state .* polynomial), 2);
     state = circshift(state, -1);

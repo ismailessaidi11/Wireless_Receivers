@@ -1,4 +1,4 @@
-function conf = plot_channel_measurements(conf, H, theta_hat, k)
+function conf  plot_channel_measurements(conf, H, theta_hat)
 %PLOT_CHANNEL_MEASUREMENTS Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -9,12 +9,12 @@ subplot(2,1,1);
 plot(abs(H))
 xlabel("Subcarrier index")
 ylabel("Magnitude")
-title(sprintf("Magnitude of H (frame %s)", num2str(k)));
+title("Magnitude of H")
 subplot(2,1,2);
 plot(theta_hat)
 ylabel("Subcarrier angle [rad]")
 xlabel("Subcarrier index")
-title(sprintf("Phase of H (frame %s)", num2str(k)));
+title("Phase of H")
 
 fileName = 'Channel_Spectrum.png';       
 saveas(gcf, fullfile(conf.channel_path, fileName)); 

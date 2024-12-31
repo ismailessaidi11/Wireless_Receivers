@@ -40,15 +40,16 @@ filtered_rxsignal = conv(rx_baseband,matched_filter,'same');
 % extract ofdm data
 len_ofdm_symbols = conf.num_ofdm_symbols*(conf.len_ofdm_symbol+conf.len_ofdm_cp);
 ofdm_data = rx_baseband(idx+conf.len_train_data+1 : idx+conf.len_train_data+len_ofdm_symbols);
+
 % extract train ofdm
 ofdm_train = rx_baseband(1+idx+conf.len_cp_train : idx+conf.len_train_data); % no CP 
 
 % channel estimation
 train_symbols = osfft(ofdm_train, conf.os_factor);
-H = train_symbols ./ conf.train_symbols;
+H = train_symbols ./ lfsr_generate(conf.N); % Pseudo-random train symbols to estimate the channel 
 theta_hat = mod(angle(H), 2*pi);
 
-plot_channel_measurements(conf, H, theta_hat);
+conf = plot_channel_measurements(conf, H, theta_hat, k);
 
 rx_symbols = zeros([conf.N*conf.num_ofdm_symbols 1]);
 for i = 1 : conf.num_ofdm_symbols
@@ -73,22 +74,20 @@ rxbits = QPSK_demapper(rx_symbols);
 rxbits = rxbits(1:conf.nbits);
 
 % Show Image and Save it to images folder
-if (strcmp(conf.image, 'yes'))
+if ~isempty(conf.image)
     % Convert bit stream back to pixel values
-    pixels = uint8(bin2dec(reshape(char(rxbits + '0'), 8, []).')); % Convert binary to decimal
+    pixels = uint8(bin2dec(reshape(char(rxbits + '0'), 8, []).'));
         
-    % Reshape into grayscale format
-    rx_image = reshape(pixels, conf.image_w, conf.image_h);
+    rx_image = reshape(pixels, conf.image_w, conf.image_h, conf.image_c);
     
     % Display the image
     figure;
     imshow(rx_image);
-    title('Reassembled Image (Bad channel conditions)');
-    
-    filename = '/rx_image_256.jpg';
-    output_path = fullfile(conf.image_folder_path, filename); % Create the full file path
+    title('Reassembled Image');
+
+    [folder, name, ext] = fileparts(conf.image);  
+    rx_filename = [folder , name, '_RX', ext];  % Append '_RX' to the filename
+    output_path = fullfile(conf.image_folder_path, rx_filename); 
     % Save the image
     imwrite(rx_image, output_path);
 end
-% dummy 
-%rxbits = zeros(conf.nbits,1);

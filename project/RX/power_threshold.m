@@ -3,7 +3,7 @@ function threshold_power = power_threshold(power_delay_profile)
 %channel
 %   Uses a Median Absolute Deviation method (robust to outliers) to find
 %   the power of the noise that should used as a threshold to measure the
-%   lngth of the channel
+%   length of the channel
 
 % Compute the median of power_delay_profile
 median_noise = median(power_delay_profile);

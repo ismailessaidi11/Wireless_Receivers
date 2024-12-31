@@ -27,15 +27,6 @@ QPSK_symbols = QPSK_Map(bi2de(txbits, 'left-msb')+1).';
 
 % S/P 
 Ns = length(QPSK_symbols);
-remainder = mod(Ns, conf.N);    % Add Padding if necessary
-if remainder ~= 0
-    padding_len = conf.N - remainder;        
-    padding_bits = randi([0 1],conf.modulation_order*padding_len,1); % Random bits for padding
-    padding_bits = reshape(padding_bits, length(padding_bits)/conf.modulation_order, conf.modulation_order);
-    padding_symbols = QPSK_Map(bi2de(padding_bits, 'left-msb')+1).';
-    conf.len_padding_symbols = length(padding_symbols);
-    QPSK_symbols(end+1:end+padding_len) = padding_symbols; 
-end
 conf.num_ofdm_symbols = length(QPSK_symbols)/conf.N;
 p_QPSK_symbols = reshape(QPSK_symbols, conf.N, conf.num_ofdm_symbols);
 
@@ -53,7 +44,7 @@ s_ofdm_symbols = p_ofdm_symbols(:);
 s_ofdm_symbols = normalize(s_ofdm_symbols);
 
 % Add preamble to signal 
-preamble = preamble_generate(conf.npreamble);
+preamble = lfsr_generate(conf.npreamble);
 preamble = upsample(preamble, conf.os_factor_preamble);
 pulse = rrc(conf.os_factor_preamble, conf.rolloff, conf.tx_filterlen);
 preamble = conv(preamble,pulse,'same');
@@ -61,9 +52,8 @@ preamble = normalize(preamble); % normalize
 
 
 % Add training symbols
-train_bits =  randi([0 1],conf.N,1); % PSEUDO RANDOM NOT RANDOOM !! length N: equivalent to 1 ofdm symbol 
-conf.train_symbols = 2*train_bits - 1; % convert to BPSK
-train_ofdm_symbols = osifft(conf.train_symbols, conf.os_factor);
+train_symbols =  lfsr_generate(conf.N); % length N: equivalent to 1 ofdm symbol 
+train_ofdm_symbols = osifft(train_symbols, conf.os_factor);
 train_cp = train_ofdm_symbols(end-round(conf.CP*conf.os_factor)+1 : end); % Add CP
 train_ofdm_symbols = [train_cp  ; train_ofdm_symbols];
 train_ofdm_symbols = normalize(train_ofdm_symbols); % normalize 

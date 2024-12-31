@@ -1,14 +1,14 @@
-function [txbits, conf] = conv_image_to_bits(filename, conf)
+function [txbits, conf] = conv_image_to_bits(conf)
 % Reads Image and converts it to bit stream
 
-image_path = fullfile(conf.image_folder_path, filename); 
+image_path = fullfile(conf.image_folder_path, conf.image); 
 image = imread(image_path);
 
 % Convert to grayscale
-if size(image, 3) == 3
-    image = rgb2gray(image);
-end
-[conf.image_h, conf.image_w, ~] = size(image);
+%if size(image, 3) == 3
+%    image = rgb2gray(image);
+%end
+[conf.image_h, conf.image_w, conf.image_c] = size(image);
 
 % Flatten the image into a 1D array
 pixel_values = image(:);

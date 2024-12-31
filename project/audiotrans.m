@@ -3,73 +3,59 @@
 % Audio Transmission Framework 
 %
 %
-%   3 operating modes:
+%   2 operating modes:
 %   - 'matlab' : generic MATLAB audio routines (unreliable under Linux)
-%   - 'native' : OS native audio system
-%       - ALSA audio tools, most Linux distrubtions
-%       - builtin WAV tools on Windows 
 %   - 'bypass' : no audio transmission, takes txsignal as received signal
-clear;
+%clear;
 clc;
 addpath('RX/');
 addpath('TX/');
 addpath('common/');
 
-
+% Configuration
 f_s         = 48000;  % sampling frequency  
-f_spacing   = 5;      % freqeuncy pacing between subcarriers
+f_spacing   = 5;      % freqeuncy spacing between subcarriers
 nbits       = 4096;   % Num of bits
-f_c         = 2000;   % Carrier Frequency
+f_c         = 6000;   % Carrier Frequency
 N           = 256;    % Number of subcarriers
-
-conf = config(f_s, f_spacing, nbits, f_c, N);
+nframes     = 2;      % Number of frames
+conf = config(f_s, f_spacing, nbits, f_c, N, nframes);
 
 % Initialize result structure with zero
 res.biterrors   = zeros(conf.nframes,1);
 res.rxnbits     = zeros(conf.nframes,1);
 
-% TODO: To speed up your simulation pregenerate data you can reuse
-% beforehand.
 
-
-
-% Results
-conf.plot_path = 'plots/';  
-conf.ber_path = 'plots/BER/';
-conf.spectral_eff_path  = 'plots/spectral_efficiency/';
-conf.channel_path  = 'plots/channel/';
-
-
-if ~exist(conf.plot_path, 'dir')
-    mkdir(conf.plot_path); 
-    mkdir('plots/BER/');
-    mkdir('plots/spectral_efficiency/');
-    mkdir('plots/channel/');
-
-end
-
-nbits = 4096; 
-simulation.param_values = nbits;
+% Simulation parameters 
+simulation.param_values = 4096;
 simulation.param_name = "nbits";
 simulation.channel_condition = "good channel";
 BER_list = zeros(size(simulation.param_values));
 eta_list = zeros(size(simulation.param_values));
+delay_spread_list = zeros(size(simulation.param_values));
+% Transmission 
 for ii = 1:numel(simulation.param_values)
+    if strcmp(simulation.param_name, 'distance')
+        disp(['Distance[m] between mic and speaker: ', num2str(simulation.param_values(ii))]);
+        disp('press a key to start recording');
+        % wait for the user to setup the new distance between mic and
+        % speaker
+        pause;
+    end 
     conf.(simulation.param_name) = simulation.param_values(ii);
     disp(simulation.param_values(ii));
     for k=1:conf.nframes
         
-        if(strcmp(conf.image, 'yes'))
+        if ~isempty(conf.image)
             % Read Image and converts it to bit stream
-            filename = '/tx_image_256.jpg';
-            [txbits, conf] = conv_image_to_bits(filename, conf);
+            [txbits, conf] = conv_image_to_bits(conf);
         else
             % Generate random data
             txbits = randi([0 1],conf.nbits,1);
         end
         
         % TODO: Implement tx() Transmit Function
-        [txsignal conf] = tx_ofdm(txbits,conf,k);
+        [txsignal, conf] = tx_ofdm(txbits,conf,k);
         
         % % % % % % % % % % % %
         % Begin
@@ -113,9 +99,9 @@ for ii = 1:numel(simulation.param_values)
         end
         
         % Plot received signal for debugging
-        %figure;
-        %plot(rxsignal);
-        %title('Received Signal')
+        figure;
+        plot(rxsignal);
+        title('Received Signal')
         
         %
         % End
@@ -123,7 +109,7 @@ for ii = 1:numel(simulation.param_values)
         % % % % % % % % % % % %
         
         % TODO: Implement rx() Receive Function
-        [rxbits conf]       = rx_ofdm(rxsignal,conf);
+        [rxbits, conf]       = rx_ofdm(rxsignal,conf, k);
         
         res.rxnbits(k)      = length(rxbits);  
         
@@ -131,7 +117,7 @@ for ii = 1:numel(simulation.param_values)
         
     end
     eta_list(ii)  = spectral_efficiency(conf);
-
+    delay_spread_list(ii) = conf.delay_spread_time_ms;
     per = sum(res.biterrors > 0)/conf.nframes;
     ber = sum(res.biterrors)/sum(res.rxnbits);
     disp(ber);
@@ -139,14 +125,14 @@ for ii = 1:numel(simulation.param_values)
 end
 
 % Plot Spectral efficiency
-figure;
-semilogy(simulation.param_values, eta_list, 'bx-', 'LineWidth', 3);
-xlabel(simulation.param_name);
-ylabel('Spectral Efficiency');
-grid on;
-title(sprintf('Spectral Efficiency in terms of %s (%s)', simulation.param_name, simulation.channel_condition));
-fileName = sprintf('%s.png', simulation.param_name);         
-saveas(gcf, fullfile(conf.spectral_eff_path, fileName));
+%figure;
+%semilogy(simulation.param_values, eta_list, 'bx-', 'LineWidth', 3);
+%xlabel(simulation.param_name);
+%ylabel('Spectral Efficiency');
+%grid on;
+%title(sprintf('Spectral Efficiency in terms of %s (%s)', simulation.param_name, simulation.channel_condition));
+%fileName = sprintf('%s.png', simulation.param_name);         
+%saveas(gcf, fullfile(conf.spectral_eff_path, fileName));
 
 % Plot the BER
 figure;
@@ -157,3 +143,15 @@ grid on;
 title(sprintf('BER in terms of %s (%s)', simulation.param_name, simulation.channel_condition));
 fileName = sprintf('%s.png', simulation.param_name);       
 saveas(gcf, fullfile(conf.ber_path, fileName)); 
+
+if strcmp(simulation.param_name, 'distance')
+    % Plot Delay Spread vs distance 
+    figure;
+    plot(simulation.param_values, delay_spread_list , 'o-', 'LineWidth', 1.5); 
+    xlabel('Distance [m]');
+    ylabel('Delay Spread [ms]');
+    title('Delay Spread vs. Distance');
+    grid on;
+    fileName = 'delay_spread_vs_distance.png';        
+    saveas(gcf, fullfile(conf.pdp_path, fileName)); 
+end

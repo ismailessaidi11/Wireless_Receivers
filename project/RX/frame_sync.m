@@ -15,7 +15,7 @@ magnitude_of_peak = 0;
 L = conf.os_factor_preamble;
 
 % Calculate the frame synchronization sequence (already mapped in BPSK)
-frame_sync_sequence = preamble_generate(frame_sync_length);
+frame_sync_sequence = lfsr_generate(frame_sync_length);
 
 % When processing an oversampled signal (L>1), the following is important:
 % Do not simply return the index where T exceeds the threshold for the first time. Since the signal is oversampled, so will be the
